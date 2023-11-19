@@ -1,6 +1,24 @@
 import flask
+import flask_cors
+import flask_swagger_ui
 
 app = flask.Flask(__name__)
+
+cors = flask_cors.CORS(app)
+app.config['CORS_HEADERS'] = 'Content-Type'
+
+
+SWAGGER_URL="/swagger"
+API_URL="/static/swagger.json"
+
+swagger_ui_blueprint = flask_swagger_ui.get_swaggerui_blueprint(
+    SWAGGER_URL,
+    API_URL,
+    config={
+        'app_name': 'Access API'
+    }
+)
+app.register_blueprint(swagger_ui_blueprint, url_prefix=SWAGGER_URL)
 
 atoms = [
   {
@@ -8,7 +26,6 @@ atoms = [
     'title' : 'first atom',
     'description' : 'first ever atoms description',
     'crtDate' : 1,
-    'dueDate' : 2
   } 
 ]
 
