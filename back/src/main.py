@@ -41,5 +41,5 @@ def get_atoms():
 def get_atom():
   for i in atoms:
     if i.get('id') == 1:
-      return flask.jsonify(atoms) 
+      return flask.jsonify(i) 
   return "could not found"
