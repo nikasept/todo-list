@@ -9,7 +9,7 @@ import Http
 
 main : Program () Model Msg
 main = Browser.element {
-    init =  \_ -> ({ flip = False, atom = Loading}, getAtom),
+    init =  \_ -> ({ flip = False, atom = Loading}, getAtomFullRequest),
     view = view,
     update = update,
     subscriptions = (\_ -> Sub.none) }
@@ -29,6 +29,18 @@ getAtom = Http.get {
     url = "http://localhost:5000/atom",
     expect = Http.expectJson (FetchAtom) decodeAtom}
 
+getAtomFullRequest : Cmd Msg
+getAtomFullRequest =
+    Http.request
+    {
+        method = "GET"
+    ,   headers = []
+    ,   url = "http://localhost:5000/atom"
+    ,   expect = Http.expectJson FetchAtom decodeAtom
+    ,   body =  Http.emptyBody
+    ,   timeout = Just 3.0
+    ,   tracker = Nothing
+    }
 type alias Atom = { 
     crtDate : Int, 
     description : String, 
@@ -66,7 +78,11 @@ update msg mod =
                 Result.Ok res ->
                     ({mod | atom = Success res}, Cmd.none)
                 Result.Err err ->
-                    ({mod | atom = Failed err}, Cmd.none)
+                    case err of 
+                        Http.Timeout ->
+                            (mod, getAtom)
+                        _ ->
+                            ({mod | atom = Failed err}, Cmd.none)
 
 
        
