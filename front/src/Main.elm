@@ -1,127 +1,84 @@
 module Main exposing (..)
 
-import Html exposing (Html)
-import Browser 
-import Html.Attributes
-import Html.Events
+import Http
 import Json.Decode
-import Http 
+import Html exposing(Html, text, div)
+import Browser
+import Html.Attributes
+
+type alias Atom = 
+    { id : Int,
+    title : String,
+    description : String,
+    createDate : String }
+
+type alias Atoms = List Atom
+
+type Msg = 
+    Fetched (Result Http.Error Atoms)
+
+type Model = Loading
+    | Failed 
+    | Success (Atoms) 
+    
+
+decodeAtom : Json.Decode.Decoder Atom
+decodeAtom = Json.Decode.map4 Atom 
+    (Json.Decode.field "id" Json.Decode.int)
+    (Json.Decode.field "title" Json.Decode.string)
+    (Json.Decode.field "description" Json.Decode.string)
+    (Json.Decode.field "createDate" Json.Decode.string)
+
+decodeAtoms : Json.Decode.Decoder Atoms
+decodeAtoms = Json.Decode.list decodeAtom
+
+getAtoms : Cmd Msg
+getAtoms = Http.request 
+    { method = "GET",
+    url = "http://localhost:5000/atoms",
+    headers = [],
+    body = Http.emptyBody,
+    timeout = Nothing,
+    tracker = Nothing, 
+    expect = Http.expectJson Fetched decodeAtoms}
+
+init : flags -> (Model, Cmd Msg) 
+init _ = (Loading, getAtoms)
+
+update : Msg -> Model -> (Model, Cmd Msg)
+update msg model = 
+    case msg of
+        Fetched result ->
+            case result of
+                Ok atoms ->
+                    (Success atoms, Cmd.none)
+                _ ->
+                    (Failed, Cmd.none)
+
+view : Model -> Html Msg
+view model =
+    case model of
+        Failed ->
+            Html.text "failed"
+        Loading ->
+            Html.text "loading"
+        Success atoms ->
+            Html.div [] (List.map (\atom -> viewAtom atom) atoms)
+
+viewAtom : Atom -> Html Msg
+viewAtom atom = Html.div [ Html.Attributes.style "background-color" "grey"] [
+    Html.h3 [] [ Html.text atom.title ],
+    Html.p [] [Html.text atom.description],
+    Html.p [] [Html.text atom.createDate] ]
+
+
+subscriptions : Model -> Sub Msg
+subscriptions model =
+    Sub.none
 
 main : Program () Model Msg
 main = Browser.element {
-    init =  \_ -> ({ flip = False, atom = Loading}, getAtomFullRequest),
+    init = init,
     view = view,
     update = update,
-    subscriptions = (\_ -> Sub.none) }
-
-
-decodeAtom : Json.Decode.Decoder Atom
-decodeAtom = 
-    Json.Decode.map4 Atom 
-        (Json.Decode.field "crtDate" Json.Decode.int)
-        (Json.Decode.field "description" Json.Decode.string)
-        (Json.Decode.field "id" Json.Decode.int)
-        (Json.Decode.field "title" Json.Decode.string)
-        
-
-getAtom : Cmd Msg
-getAtom = Http.get {
-    url = "http://localhost:5000/atom",
-    expect = Http.expectJson (FetchAtom) decodeAtom}
-
-getAtomFullRequest : Cmd Msg
-getAtomFullRequest =
-    Http.request
-    {
-        method = "GET"
-    ,   headers = []
-    ,   url = "http://localhost:5000/atom"
-    ,   expect = Http.expectJson FetchAtom decodeAtom
-    ,   body =  Http.emptyBody
-    ,   timeout = Just 3.0
-    ,   tracker = Nothing
-    }
-type alias Atom = { 
-    crtDate : Int, 
-    description : String, 
-    id : Int,
-    title : String }
-
-type GetAtom = 
-    Loading
-    | Failed Http.Error
-    | Success Atom
-
-type Flip = 
-    On
-    | Off
-
-type alias Model = {
-    flip : Bool,
-    atom : GetAtom } 
-
-type Msg = 
-    TurnOn
-    | TurnOff
-    | FetchAtom (Result Http.Error Atom)
- 
-
-update : Msg -> Model -> (Model, Cmd Msg)
-update msg mod =
-    case msg of
-        TurnOn ->
-            ({mod | flip = True}, Cmd.none)
-        TurnOff ->
-            ({mod | flip = False}, Cmd.none)
-        FetchAtom result ->
-            case result of 
-                Result.Ok res ->
-                    ({mod | atom = Success res}, Cmd.none)
-                Result.Err err ->
-                    case err of 
-                        Http.Timeout ->
-                            (mod, getAtom)
-                        _ ->
-                            ({mod | atom = Failed err}, Cmd.none)
-
-
-       
-view : Model -> Html Msg 
-view model = viewAtom model.atom 
- 
-
-viewAtom : GetAtom -> Html Msg
-viewAtom atom = 
-    case atom of
-        Loading ->
-            Html.text "Loading.."
-        Failed err ->
-            case err of
-                Http.BadBody body -> 
-                    Html.text body 
-                Http.BadStatus _ ->
-                    Html.text "BadStatus"
-                Http.BadUrl _ ->
-                    Html.text "BadUrl"
-                Http.NetworkError ->
-                    Html.text "Network"
-                Http.Timeout ->
-                    Html.text "Timeout"
-        Success res ->
-            Html.text res.title
-
-
-
-footerText : String
-footerText = "FOOTER"
-
-headerText : String
-headerText = "HEADER"
-
-viewHeader : String -> Html Msg 
-viewHeader custom = Html.p [ Html.Attributes.class "p"] [
-     Html.text (headerText ++ custom) ]
-
-viewFooter : String -> Html Msg 
-viewFooter custom = Html.p [ Html.Attributes.class "p"] [
-     Html.text (footerText ++ custom) ]
+    subscriptions = subscriptions }

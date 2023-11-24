@@ -3,8 +3,6 @@ import flask_cors
 import flask_swagger_ui
 import pyodbc
 import datetime
-import json
-
 
 class CreateAtomDto:
   def __init__(self, title : str, description : str):
@@ -27,7 +25,7 @@ class AtomDto:
     }
 
 
-class DatabaseFacade:
+class AtomRepository:
   con : pyodbc.Connection
   def __init__(self):
     self.drivers = [item for item in pyodbc.drivers()]
@@ -117,7 +115,7 @@ def create_atom():
     title = rq['title']
     description = rq['description']
 
-  db = DatabaseFacade()
+  db = AtomRepository()
   try:
     atom = CreateAtomDto(title, description)
     db.AddAtom(atom)
@@ -130,7 +128,7 @@ def create_atom():
 
 @app.route("/atoms", methods=["GET"])
 def get_atoms():
-  db = DatabaseFacade()
+  db = AtomRepository()
   try:
     atoms = flask.jsonify(db.GetAtoms())
     return atoms
