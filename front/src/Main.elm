@@ -2,9 +2,11 @@ module Main exposing (..)
 
 import Http
 import Json.Decode
-import Html exposing(Html, text, div)
+import Html
+import Html.Styled exposing (..)
+import Html.Styled.Attributes exposing (..)
+import Styles.MainStyle exposing (..)
 import Browser
-import Html.Attributes
 
 type alias Atom = 
     { id : Int,
@@ -17,7 +19,8 @@ type alias Atoms = List Atom
 type Msg = 
     Fetched (Result Http.Error Atoms)
 
-type Model = Loading
+type Model = 
+      Loading
     | Failed 
     | Success (Atoms) 
     
@@ -55,21 +58,21 @@ update msg model =
                 _ ->
                     (Failed, Cmd.none)
 
-view : Model -> Html Msg
+view : Model -> Html.Styled.Html Msg
 view model =
     case model of
         Failed ->
-            Html.text "failed"
+            Html.Styled.text "failed"
         Loading ->
-            Html.text "loading"
+            Html.Styled.text "loading"
         Success atoms ->
-            Html.div [] (List.map (\atom -> viewAtom atom) atoms)
+            Html.Styled.div [] (List.map (\atom -> viewAtom atom) atoms)
 
-viewAtom : Atom -> Html Msg
-viewAtom atom = Html.div [ Html.Attributes.style "background-color" "grey"] [
-    Html.h3 [] [ Html.text atom.title ],
-    Html.p [] [Html.text atom.description],
-    Html.p [] [Html.text atom.createDate] ]
+viewAtom : Atom -> Html.Styled.Html Msg
+viewAtom atom = Html.Styled.div [ Html.Styled.Attributes.style "background-color" "grey"] [
+    Html.Styled.h3 [] [ Html.Styled.text atom.title ],
+    Html.Styled.p [css [bigFontStyle] ] [Html.Styled.text atom.description],
+    Html.Styled.p [] [Html.Styled.text atom.createDate] ]
 
 
 subscriptions : Model -> Sub Msg
@@ -79,6 +82,6 @@ subscriptions model =
 main : Program () Model Msg
 main = Browser.element {
     init = init,
-    view = view,
+    view = view >> toUnstyled,
     update = update,
     subscriptions = subscriptions }

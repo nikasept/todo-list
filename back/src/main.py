@@ -33,11 +33,13 @@ class AtomRepository:
     self.server : str = 'localhost'
     self.database : str = 'projects'
     self.uid : str = 'SA'
-    self.pwd : str = 'P@ssw0rd'
+    self.pwd : str = 'P2ssw0rd'
     self.con_string : str = f'DRIVER={self.driver};SERVER={self.server};DATABASE={self.database};UID={self.uid};PWD={self.pwd};TrustServerCertificate=yes;'
     self.table_atoms : str = 'todo.Atoms' 
-    self.con = pyodbc.connect(self.con_string)
-
+    try:
+        self.con = pyodbc.connect(self.con_string)
+    except ex:
+        print("didnt connect to database :( ")
   def query(self, query : str):
     try:
       self.con.execute(query)
@@ -129,6 +131,7 @@ def create_atom():
 @app.route("/atoms", methods=["GET"])
 def get_atoms():
   db = AtomRepository()
+  print("/atoms web request, get, db= ", db)
   try:
     atoms = flask.jsonify(db.GetAtoms())
     return atoms
