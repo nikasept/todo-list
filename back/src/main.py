@@ -3,6 +3,13 @@ import flask_cors
 import flask_swagger_ui
 import pyodbc
 import datetime
+import configparser
+
+
+cfg = configparser.ConfigParser()
+setting = cfg.read('settings.cfg')
+
+
 
 class CreateAtomDto:
   def __init__(self, title : str, description : str):
@@ -27,15 +34,17 @@ class AtomDto:
 
 class AtomRepository:
   con : pyodbc.Connection
-  def __init__(self):
+  def __init__(self, cfg : configparser.ConfigParser):
     self.drivers = [item for item in pyodbc.drivers()]
     self.driver = self.drivers[-1]
-    self.server : str = 'localhost'
-    self.database : str = 'projects'
-    self.uid : str = 'SA'
-    self.pwd : str = 'P2ssw0rd'
+
+    self.server : str = cfg.get('Database', 'server') 
+    self.database : str = cfg.get('Database', 'database')
+    self.uid : str = cfg.get('Database', 'uid')
+    self.pwd : str = cfg.get('Database', 'pwd')
     self.con_string : str = f'DRIVER={self.driver};SERVER={self.server};DATABASE={self.database};UID={self.uid};PWD={self.pwd};TrustServerCertificate=yes;'
     self.table_atoms : str = 'todo.Atoms' 
+    print(self.con_string)
     try:
         self.con = pyodbc.connect(self.con_string)
     except ex:
@@ -117,7 +126,7 @@ def create_atom():
     title = rq['title']
     description = rq['description']
 
-  db = AtomRepository()
+  db = AtomRepository(cfg)
   try:
     atom = CreateAtomDto(title, description)
     db.AddAtom(atom)
@@ -130,7 +139,7 @@ def create_atom():
 
 @app.route("/atoms", methods=["GET"])
 def get_atoms():
-  db = AtomRepository()
+  db = AtomRepository(cfg)
   print("/atoms web request, get, db= ", db)
   try:
     atoms = flask.jsonify(db.GetAtoms())
