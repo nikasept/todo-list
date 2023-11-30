@@ -59,17 +59,20 @@ update msg model =
                     (Failed, Cmd.none)
 
 view : Model -> Html.Styled.Html Msg
-view model =
+view model = Html.Styled.div [] [ redPageBackgroundStyle, 
     case model of
         Failed ->
             Html.Styled.text "failed"
         Loading ->
             Html.Styled.text "loading"
         Success atoms ->
-            Html.Styled.div [] (List.map (\atom -> viewAtom atom) atoms)
+            Html.Styled.div [] (List.map (\atom -> viewAtom atom) atoms) ]
+
+
+
 
 viewAtom : Atom -> Html.Styled.Html Msg
-viewAtom atom = Html.Styled.div [ Html.Styled.Attributes.style "background-color" "grey"] [
+viewAtom atom = Html.Styled.div [ css [roundContainerStyle] ] [
     Html.Styled.h3 [] [ Html.Styled.text atom.title ],
     Html.Styled.p [css [bigFontStyle] ] [Html.Styled.text atom.description],
     Html.Styled.p [] [Html.Styled.text atom.createDate] ]
