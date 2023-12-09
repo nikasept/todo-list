@@ -1,20 +1,36 @@
-import flask
-import flask_cors
-import flask_swagger_ui
 import pyodbc
 import datetime
 import configparser
+import fastapi
+import uvicorn
+import json
+import fastapi.middleware.cors
+import pydantic
+
+
+app = fastapi.FastAPI()
+
+origins = [
+    "http://localhost:8000",
+    "http://localhost:8080"
+]
+
+app.add_middleware(
+    fastapi.middleware.cors.CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 cfg = configparser.ConfigParser()
 setting = cfg.read('settings.cfg')
 
 
-
-class CreateAtomDto:
-  def __init__(self, title : str, description : str):
-    self.title = title
-    self.description = description
+class CreateAtomDto(pydantic.BaseModel):
+  title : str
+  description : str
 
 class AtomDto:
   def __init__(self, id : int, title : str, description : str, createDate : datetime.datetime):
@@ -68,7 +84,7 @@ class AtomRepository:
       else:
         raise
 
-  def AddAtom(self, atom : CreateAtomDto):
+  def add_atom(self, atom : CreateAtomDto):
     try:
       if atom is None:
         raise Exception("atom must not be None")
@@ -82,14 +98,13 @@ class AtomRepository:
         print("connection must not be None")
       raise
   
-  def GetAtoms(self):
+  def get_atoms(self):
     query : str = f"select * from {self.table_atoms}"  
     rows = self.con.execute(query).fetchall()
     atoms : list[AtomDto] = []
     for i in rows:
       atoms.append(AtomDto(i.id, i.title, i.description, i.createDate).toDict())
     return atoms
-
 
   def __del__(self):
     print('Destructor called')
@@ -99,50 +114,42 @@ class AtomRepository:
       print("connection must not be null here")
 
 
-
-app = flask.Flask(__name__)
-
-cors = flask_cors.CORS(app)
-app.config['CORS_HEADERS'] = 'Content-Type'
+@app.get("/health")
+async def main():
+  return {"message": "alive"}
 
 
-SWAGGER_URL="/swagger"
-API_URL="/static/swagger.json"
 
-swagger_ui_blueprint = flask_swagger_ui.get_swaggerui_blueprint(
-    SWAGGER_URL,
-    API_URL,
-    config={
-        'app_name': 'Access API'
-    }
-)
-app.register_blueprint(swagger_ui_blueprint, url_prefix=SWAGGER_URL)
-
-
-@app.route("/atom", methods=["POST"])
-def create_atom():
-  if flask.request.method == "POST":
-    rq = flask.request.get_json()
-    title = rq['title']
-    description = rq['description']
-
-  db = AtomRepository(cfg)
-  try:
-    atom = CreateAtomDto(title, description)
-    db.AddAtom(atom)
-    db.commit()
-  except ex:
-    #how should this work??
-    return ex
-  finally:
-    del db
-
-@app.route("/atoms", methods=["GET"])
-def get_atoms():
+@app.get("/atoms")
+async def get_all():
   db = AtomRepository(cfg)
   print("/atoms web request, get, db= ", db)
   try:
-    atoms = flask.jsonify(db.GetAtoms())
+    atoms = db.get_atoms() 
+    db.commit()
     return atoms
+  except Exception as ex:
+    return ex.args
   finally:
     del db
+  
+@app.post("/atom")
+async def create(atom : CreateAtomDto): 
+  db = AtomRepository(cfg)
+  try:
+    db.add_atom(atom)
+    db.commit()
+    return fastapi.status.HTTP_201_CREATED
+  except Exception as ex:
+    return ex.args
+  finally:
+    del db
+
+  return atom
+
+@app.put("update")
+async def user():
+  pass
+
+if __name__ == '__main__':
+  uvicorn.run("main:app", host=cfg.get('Hosting', 'host'), port=int(cfg.get('Hosting', 'port')), reload=True)

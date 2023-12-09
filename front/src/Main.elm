@@ -38,7 +38,7 @@ decodeAtoms = Json.Decode.list decodeAtom
 getAtoms : Cmd Msg
 getAtoms = Http.request 
     { method = "GET",
-    url = "http://localhost:5000/atoms",
+    url = "http://localhost:8080/atoms",
     headers = [],
     body = Http.emptyBody,
     timeout = Nothing,
