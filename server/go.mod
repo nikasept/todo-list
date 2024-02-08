@@ -1,6 +1,6 @@
 module server
 
-go 1.21.6
+go 1.22.0
 
 require (
 	github.com/KyleBanks/depth v1.2.1 // indirect
@@ -8,6 +8,7 @@ require (
 	github.com/go-openapi/jsonreference v0.20.0 // indirect
 	github.com/go-openapi/spec v0.20.6 // indirect
 	github.com/go-openapi/swag v0.19.15 // indirect
+	github.com/gofrs/uuid/v5 v5.0.0 // indirect
 	github.com/golang-sql/civil v0.0.0-20220223132316-b832511892a9 // indirect
 	github.com/golang-sql/sqlexp v0.1.0 // indirect
 	github.com/jmoiron/sqlx v1.3.5 // indirect
